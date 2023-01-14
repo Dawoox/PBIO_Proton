@@ -1,4 +1,5 @@
 import atexit
+import random
 import sqlite3
 import time
 
@@ -13,52 +14,68 @@ class DataType(Enum):
     INFORMATION = 1
     DATA = 0
 
+
 class App:
     def __init__(self):
         # ADMIN CONFIG, YOU SHOULDN'T NEED TO EDIT THESES VALUES /!\
         self.DEFAULT_COM_PORT = 'COM4'
         self.DEFAULT_DB_PATH = 'pool1.db'
+        self.EMULATE_ARDUINO_DATA = True
+        self.EMULATE_MAX_DATA_JUMP = 5
         # IN-APP VARIABLES
+        self.DEBUG_last_emulate_data = 0
         self.com_port = None
         self.serial_link = None
         self.db_conn = None
 
     def send_command(self, command):
-        print(f"SENDING ${command} COMMAND")
-        self.serial_link.write(command.encode())
-        self.serial_link.flush()
-        print("WAITING FOR ARDUINO BOARD TO RESPOND")
-        time.sleep(2)
+        if self.EMULATE_ARDUINO_DATA:
+            pass
+        else:
+            print(f"SENDING ${command} COMMAND")
+            self.serial_link.write(command.encode())
+            self.serial_link.flush()
+            print("WAITING FOR ARDUINO BOARD TO RESPOND")
+            time.sleep(2)
 
     def readDataIn(self):
-        try:
-            data = self.serial_link.readline().decode()
-        except serial.SerialException as e:
-            print("ERROR: NO NEW DATA FROM SERIAL PORT")
-            print(e)
-            exit()
-        except TypeError as e:
-            print("ERROR: PORT DISCONNECTED OR USB-UART OCCURRED")
-            print(e)
-            exit()
+        if self.EMULATE_ARDUINO_DATA:
+            data = random.randint(-200, 200)
+            while data < self.DEBUG_last_emulate_data - self.EMULATE_MAX_DATA_JUMP \
+                    or data > self.DEBUG_last_emulate_data + self.EMULATE_MAX_DATA_JUMP:
+                data = random.randint(-200, 200)
+            self.DEBUG_last_emulate_data = data
+            return [DataType.DATA, data]
         else:
-            if data[:11] == str('BEGIN_DATA:'):
-                return DataType.DATA, data[11:len(data) - 11]
+            try:
+                data = self.serial_link.readline().decode()
+            except serial.SerialException as e:
+                print("ERROR: NO NEW DATA FROM SERIAL PORT")
+                print(e)
+                exit()
+            except TypeError as e:
+                print("ERROR: PORT DISCONNECTED OR USB-UART OCCURRED")
+                print(e)
+                exit()
             else:
-                return DataType.INFORMATION, data
+                if data[:11] == str('BEGIN_DATA:'):
+                    return DataType.DATA, data[11:len(data) - 11]
+                else:
+                    return DataType.INFORMATION, data
 
     def exit_handler(self):
-        print('Closing com port')
-        self.serial_link.close()
-        print('Closing database link')
+        if not self.EMULATE_ARDUINO_DATA:
+            print('Closing com port')
+            self.serial_link.close()
         if self.db_conn:
+            print('Closing database link')
             self.db_conn.close()
 
     def storeData(self, data):
         cursor = self.db_conn.cursor()
         print(data)
         cursor.execute("INSERT INTO data (TOC,isDataValid,sensor1) " +
-                       "VALUES (datetime('now'), (?), (?));", (True, data,))
+                       "VALUES (strftime('%Y-%m-%d %H:%M:%S:%f', 'now'), (?), (?));", (True, data,))
         self.db_conn.commit()
 
     def run(self):
@@ -74,17 +91,21 @@ class App:
         print("DOING SO WHILE CAPTURING DATA WILL INVALIDATE ANY FURTHER DATA /!\\")
         print("==================================================================")
         print('\n')
-        # SERIAL LINK SETUP
-        self.com_port = str(input("Com port? (DEFAULT IS " + str(self.DEFAULT_COM_PORT) + ")"))
-        if self.com_port == '':
-            self.com_port = self.DEFAULT_COM_PORT
-        try:
-            self.serial_link = serial.Serial(port=self.com_port, baudrate=9600, timeout=1)
-        except serial.SerialException as e:
-            print(f"TRIED TO ACCESS PORT: ${self.com_port}")
-            print("ERROR: COM PORT LOCKED/UNKNOWN, PROTON IS SHUTTING DOWN")
-            print(e)
-            exit()
+        if self.EMULATE_ARDUINO_DATA:
+            print("WARNING: EMULATING ARDUINO DATA")
+            print("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
+        else:
+            # SERIAL LINK SETUP
+            self.com_port = str(input("Com port? (DEFAULT IS " + str(self.DEFAULT_COM_PORT) + ")"))
+            if self.com_port == '':
+                self.com_port = self.DEFAULT_COM_PORT
+            try:
+                self.serial_link = serial.Serial(port=self.com_port, baudrate=9600, timeout=1)
+            except serial.SerialException as e:
+                print(f"TRIED TO ACCESS PORT: ${self.com_port}")
+                print("ERROR: COM PORT LOCKED/UNKNOWN, PROTON IS SHUTTING DOWN")
+                print(e)
+                exit()
         print("==================================================================")
         atexit.register(self.exit_handler)
         print("WAITING FOR ARDUINO BOARD TO RESTART")
@@ -112,3 +133,6 @@ class App:
                 self.storeData(dataIn[1])
             else:
                 print(dataIn)
+
+
+App().run()
