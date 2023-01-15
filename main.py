@@ -73,9 +73,9 @@ class App:
 
     def storeData(self, data):
         cursor = self.db_conn.cursor()
-        print(data)
-        cursor.execute("INSERT INTO data (TOC,isDataValid,sensor1) " +
-                       "VALUES (strftime('%Y-%m-%d %H:%M:%S:%f', 'now'), (?), (?));", (True, data,))
+        # DEBUG ONLY: print(data)
+        cursor.execute("INSERT INTO data (time,isDataValid,sensor1) " +
+                       "VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), (?), (?));", (True, data))
         self.db_conn.commit()
 
     def run(self):
@@ -112,7 +112,7 @@ class App:
         time.sleep(2)
         print("==================================================================")
         # DATABASE CONNECTION SETUP
-        print(f"Initializing database connection..  (located at ~/${self.DEFAULT_DB_PATH}")
+        print(f"Initializing database connection..  (located at ~/${self.DEFAULT_DB_PATH})")
         self.db_conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), self.DEFAULT_DB_PATH))
         print("==================================================================")
         # STARTUP
