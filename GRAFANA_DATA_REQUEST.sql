@@ -1,0 +1,1 @@
+SELECT time,sensor1 FROM 'data';
