@@ -6,13 +6,11 @@ import time
 import keyboard
 import serial
 import os
+import logging
+import coloredlogs
 from pyfiglet import Figlet
-from enum import Enum
 
 
-class DataType(Enum):
-    INFORMATION = 1
-    DATA = 0
 def formatData(data):
     data = data.split(':')
     data.pop(0)
@@ -26,118 +24,132 @@ class App:
         self.DEFAULT_DB_PATH = 'pool1.db'
         self.EMULATE_ARDUINO_DATA = True
         self.EMULATE_MAX_DATA_JUMP = 5
+        self.DEBUG_last_emulate_data = [0, 0, 0]
+        self.DEBUG_ignore_precheck = True
         # IN-APP VARIABLES
-        self.DEBUG_last_emulate_data = 0
         self.com_port = None
         self.serial_link = None
         self.db_conn = None
+        self.data_validity = True
+        self.zero_point = None
+
+        # Config for the file logger
+        # WIP: logging.basicConfig(filename='what_the_heck_just_happened.log', encoding='utf-8', level=logging.DEBUG)
+
+        # Config for the console logger
+        self.logger = logging.getLogger(__name__)
+        coloredlogs.install(level='INFO', logger=self.logger, milliseconds=True)
 
     def send_command(self, command):
         if self.EMULATE_ARDUINO_DATA:
-            pass
+            self.logger.debug(f"EMULATING ARDUINO DATA set to True, {command} not sent")
         else:
-            print(f"SENDING ${command} COMMAND")
+            self.logger.info(f"SENDING ${command} COMMAND")
             self.serial_link.write(command.encode())
             self.serial_link.flush()
-            print("WAITING FOR ARDUINO BOARD TO RESPOND")
+            self.logger.debug("WAITING FOR ARDUINO BOARD TO RESPOND")
             time.sleep(2)
 
     def readDataIn(self):
         if self.EMULATE_ARDUINO_DATA:
-            data = random.randint(-200, 200)
-            while data < self.DEBUG_last_emulate_data - self.EMULATE_MAX_DATA_JUMP \
-                    or data > self.DEBUG_last_emulate_data + self.EMULATE_MAX_DATA_JUMP:
-                data = random.randint(-200, 200)
+            data = []
+            for i in range(3):
+                data.append(random.randint(self.DEBUG_last_emulate_data[i] - self.EMULATE_MAX_DATA_JUMP,
+                                           self.DEBUG_last_emulate_data[i] + self.EMULATE_MAX_DATA_JUMP))
             self.DEBUG_last_emulate_data = data
-            return [DataType.DATA, data]
+            return data
         else:
             try:
                 data = self.serial_link.readline().decode()
             except serial.SerialException as e:
-                print("ERROR: NO NEW DATA FROM SERIAL PORT")
-                print(e)
+                self.logger.exception("NO NEW DATA FROM SERIAL PORT")
                 exit()
             except TypeError as e:
-                print("ERROR: PORT DISCONNECTED OR USB-UART OCCURRED")
-                print(e)
+                self.logger.exception("PORT DISCONNECTED OR USB-UART OCCURRED")
                 exit()
             else:
-                if data.split(':')[0] == str('BEGIN_DATA:'):
-                    return DataType.DATA, self.formatData(data)
-                else:
-                    return DataType.INFORMATION, data
-
+                return data
 
     def exit_handler(self):
         if not self.EMULATE_ARDUINO_DATA:
-            print('Closing com port')
+            self.logger.info('Closing com port')
             self.serial_link.close()
         if self.db_conn:
-            print('Closing database link')
+            self.logger.info('Closing database link')
             self.db_conn.close()
 
     def storeData(self, data):
         cursor = self.db_conn.cursor()
-        # DEBUG ONLY: print(data)
-        cursor.execute("INSERT INTO data (time,isDataValid,sensor1) " +
-                       "VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), (?), (?));", (True, data))
+        self.logger.debug(f"STORING DATA: {data}")
+        cursor.execute("INSERT INTO data (time,isDataValid,sensor1,sensor2,sensor3) " +
+                       "VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), (?), (?), (?), (?));",
+                       (self.data_validity, data[0], data[1], data[2]))
         self.db_conn.commit()
+
+    def precheck(self):
+        # Check if the zero point is already set
+        if self.zero_point is None:
+            self.logger.critical("ZERO POINT NOT SET")
+            exit()
+        # Check if the flag "EMULATE_ARDUINO_DATA" is set to True
+        if self.EMULATE_ARDUINO_DATA:
+            self.logger.critical("EMULATING ARDUINO DATA")
+            self.logger.critical("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
+            exit()
+
+    def connectToSerialPort(self):
+        # SERIAL LINK SETUP
+        self.com_port = str(input("Com port? (DEFAULT IS " + str(self.DEFAULT_COM_PORT) + ")"))
+        if self.com_port == '':
+            self.com_port = self.DEFAULT_COM_PORT
+        self.logger.debug(f"TRIED TO ACCESS PORT: ${self.com_port}")
+        try:
+            self.serial_link = serial.Serial(port=self.com_port, baudrate=9600, timeout=1)
+        except serial.SerialException as e:
+            self.logger.exception("COM PORT LOCKED/UNKNOWN, PROTON IS SHUTTING DOWN")
+            exit()
+        self.logger.debug("WAITING FOR ARDUINO BOARD TO RESTART")
+
+    def calibrate(self):
+        self.DEBUG_last_emulate_data = self.readDataIn()
+        pass
 
     def run(self):
         print(Figlet(font='slant').renderText('Proton'), end='')
-        print("v1.7.0-A - 12/01/2023 - Proton MMS(Monitoring and Management System)")
+        print("v1.8.0-A - 19/01/2023 - Proton MMS(Monitoring and Management System)")
         print("Please ensure that the arduino board is already plug-in")
-        print("==================================================================")
-        print("Press S at any time to stop the system")
-        print("Press R at any time to restart the system")
-        print("Press Q at any time to close Proton")
-        print("DO NOT CLOSE BY ANY OTHER MEAN, DOING SO MIGHT RESULT IN DATA LOSSES /!\\")
-        print("Press X to calibrate the system")
-        print("DOING SO WHILE CAPTURING DATA WILL INVALIDATE ANY FURTHER DATA /!\\")
-        print("==================================================================")
-        print('\n')
-        if self.EMULATE_ARDUINO_DATA:
-            print("WARNING: EMULATING ARDUINO DATA")
-            print("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
+        self.logger.info("==================================================================")
+        self.logger.info("Press Q at any time to close Proton")
+        self.logger.info("Press X to calibrate the system")
+        self.logger.info("DOING SO WHILE CAPTURING DATA WILL INVALIDATE ANY FURTHER DATA")
+        self.logger.info("==================================================================")
+        if self.DEBUG_ignore_precheck:
+            self.logger.warning("/!\\ PRECHECK DISABLED /!\\")
         else:
-            # SERIAL LINK SETUP
-            self.com_port = str(input("Com port? (DEFAULT IS " + str(self.DEFAULT_COM_PORT) + ")"))
-            if self.com_port == '':
-                self.com_port = self.DEFAULT_COM_PORT
-            try:
-                self.serial_link = serial.Serial(port=self.com_port, baudrate=9600, timeout=1)
-            except serial.SerialException as e:
-                print(f"TRIED TO ACCESS PORT: ${self.com_port}")
-                print("ERROR: COM PORT LOCKED/UNKNOWN, PROTON IS SHUTTING DOWN")
-                print(e)
-                exit()
-        print("==================================================================")
+            self.precheck()
+        if not self.EMULATE_ARDUINO_DATA:
+            print()
+            self.connectToSerialPort()
+            print()
+        # Set exit handler
         atexit.register(self.exit_handler)
-        print("WAITING FOR ARDUINO BOARD TO RESTART")
         time.sleep(2)
-        print("==================================================================")
         # DATABASE CONNECTION SETUP
-        print(f"Initializing database connection..  (located at ~/${self.DEFAULT_DB_PATH})")
+        self.logger.info(f"Initializing database connection..  (located at ~/${self.DEFAULT_DB_PATH})")
         self.db_conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), self.DEFAULT_DB_PATH))
-        print("==================================================================")
+        self.logger.info("==================================================================")
         # STARTUP
-        self.send_command('calibrate')
         self.send_command('run')
-        print("NOW RECEIVING DATA")
-        print("==================================================================")
+        self.logger.info("Now running...")
         while True:
-            if keyboard.is_pressed('s'):
-                self.send_command('stop')
-            if keyboard.is_pressed('r'):
-                self.send_command('run')
             if keyboard.is_pressed('q'):
+                self.logger.debug("Q PRESSED, EXITING")
                 exit()
-            dataIn = self.readDataIn()
-            # DEBUG ONLY: print(dataIn[0], dataIn[1])
-            if dataIn[0] == DataType.DATA:
-                self.storeData(dataIn[1])
-            else:
-                print(dataIn)
+            if keyboard.is_pressed('x'):
+                self.logger.debug("X PRESSED, CALIBRATING")
+                self.calibrate()
+            data_in = self.readDataIn()
+            self.storeData(data_in)
 
 
 if __name__ == '__main__':
