@@ -81,9 +81,9 @@ class App:
     def storeData(self, data):
         cursor = self.db_conn.cursor()
         self.logger.debug(f"STORING DATA: {data}")
-        cursor.execute("INSERT INTO data (time,isDataValid,sensor1,sensor2,sensor3) " +
-                       "VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), (?), (?), (?), (?));",
-                       (self.data_validity, data[0], data[1], data[2]))
+        cursor.execute("INSERT INTO data (time,sensor1,sensor2,sensor3) " +
+                       "VALUES (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), (?), (?), (?));",
+                       (data[0], data[1], data[2]))
         self.db_conn.commit()
 
     def precheck(self):
@@ -116,7 +116,7 @@ class App:
 
     def run(self):
         print(Figlet(font='slant').renderText('Proton'), end='')
-        print("v1.9.0-RC1 - 19/01/2023 - Proton MMS(Monitoring and Management System)")
+        print("v1.9.0-RC2 - 19/01/2023 - Proton MMS(Monitoring and Management System)")
         print("Please ensure that the arduino board is already plug-in")
         self.logger.info("==================================================================")
         self.logger.info("Press Q at any time to close Proton")
