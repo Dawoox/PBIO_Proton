@@ -116,7 +116,7 @@ class App:
 
     def run(self):
         print(Figlet(font='slant').renderText('Proton'), end='')
-        print("v1.8.0-A - 19/01/2023 - Proton MMS(Monitoring and Management System)")
+        print("v1.9.0-RC1 - 19/01/2023 - Proton MMS(Monitoring and Management System)")
         print("Please ensure that the arduino board is already plug-in")
         self.logger.info("==================================================================")
         self.logger.info("Press Q at any time to close Proton")
