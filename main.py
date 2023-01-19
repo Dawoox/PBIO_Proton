@@ -58,10 +58,15 @@ class App:
                 print(e)
                 exit()
             else:
-                if data[:11] == str('BEGIN_DATA:'):
-                    return DataType.DATA, data[11:len(data) - 11]
+                if data.split(':')[0] == str('BEGIN_DATA:'):
+                    return DataType.DATA, self.formatData(data)
                 else:
                     return DataType.INFORMATION, data
+
+    def formatData(self, data):
+        data = data.split(':')
+        data.pop(0)
+        return list(map(int, data))
 
     def exit_handler(self):
         if not self.EMULATE_ARDUINO_DATA:
@@ -135,4 +140,5 @@ class App:
                 print(dataIn)
 
 
-App().run()
+if __name__ == '__main__':
+    App().run()
