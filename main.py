@@ -13,6 +13,10 @@ from enum import Enum
 class DataType(Enum):
     INFORMATION = 1
     DATA = 0
+def formatData(data):
+    data = data.split(':')
+    data.pop(0)
+    return list(map(int, data))
 
 
 class App:
@@ -63,10 +67,6 @@ class App:
                 else:
                     return DataType.INFORMATION, data
 
-    def formatData(self, data):
-        data = data.split(':')
-        data.pop(0)
-        return list(map(int, data))
 
     def exit_handler(self):
         if not self.EMULATE_ARDUINO_DATA:

@@ -1340,34 +1340,44 @@
       <NotNull>1</NotNull>
       <Position>4</Position>
     </column>
-    <key id="489" parent="482">
+    <column id="489" parent="482" name="sensor2">
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>5</Position>
+    </column>
+    <column id="490" parent="482" name="sensor3">
+      <DasType>INTEGER|0s</DasType>
+      <NotNull>1</NotNull>
+      <Position>6</Position>
+    </column>
+    <key id="491" parent="482">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
-    <column id="490" parent="483" name="type">
+    <column id="492" parent="483" name="type">
       <DasType>TEXT|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="491" parent="483" name="name">
+    <column id="493" parent="483" name="name">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="492" parent="483" name="tbl_name">
+    <column id="494" parent="483" name="tbl_name">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="493" parent="483" name="rootpage">
+    <column id="495" parent="483" name="rootpage">
       <DasType>INT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="494" parent="483" name="sql">
+    <column id="496" parent="483" name="sql">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="495" parent="484" name="name">
+    <column id="497" parent="484" name="name">
       <Position>1</Position>
     </column>
-    <column id="496" parent="484" name="seq">
+    <column id="498" parent="484" name="seq">
       <Position>2</Position>
     </column>
   </database-model>
