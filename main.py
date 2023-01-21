@@ -61,10 +61,10 @@ class App:
         else:
             try:
                 data = self.serial_link.readline().decode()
-            except serial.SerialException as e:
+            except serial.SerialException:
                 self.logger.exception("NO NEW DATA FROM SERIAL PORT")
                 exit()
-            except TypeError as e:
+            except TypeError:
                 self.logger.exception("PORT DISCONNECTED OR USB-UART OCCURRED")
                 exit()
             else:
@@ -105,7 +105,7 @@ class App:
         self.logger.debug(f"TRIED TO ACCESS PORT: ${self.com_port}")
         try:
             self.serial_link = serial.Serial(port=self.com_port, baudrate=9600, timeout=1)
-        except serial.SerialException as e:
+        except serial.SerialException:
             self.logger.exception("COM PORT LOCKED/UNKNOWN, PROTON IS SHUTTING DOWN")
             exit()
         self.logger.debug("WAITING FOR ARDUINO BOARD TO RESTART")
@@ -116,7 +116,7 @@ class App:
 
     def run(self):
         print(Figlet(font='slant').renderText('Proton'), end='')
-        print("v1.9.0-RC2 - 19/01/2023 - Proton MMS(Monitoring and Management System)")
+        print("v1.9.1-RC2 - 19/01/2023 - Proton MMS(Monitoring and Management System)")
         print("Please ensure that the arduino board is already plug-in")
         self.logger.info("==================================================================")
         self.logger.info("Press Q at any time to close Proton")
