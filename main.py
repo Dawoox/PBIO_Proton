@@ -3,7 +3,6 @@ import random
 import sqlite3
 import time
 
-import keyboard
 import serial
 import os
 import logging
@@ -141,12 +140,6 @@ class App:
         self.send_command('run')
         self.logger.info("Now running...")
         while True:
-            if keyboard.is_pressed('q'):
-                self.logger.debug("Q PRESSED, EXITING")
-                exit()
-            if keyboard.is_pressed('x'):
-                self.logger.debug("X PRESSED, CALIBRATING")
-                self.calibrate()
             data_in = self.readDataIn()
             self.storeData(data_in)
 
