@@ -13,7 +13,6 @@ from pyfiglet import Figlet
 
 def formatData(data):
     data = data.split(':')
-    data.pop(0)
     return list(map(int, data))
 
 
