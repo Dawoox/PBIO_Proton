@@ -5,8 +5,8 @@ from main import formatData
 
 class TestDataFormatting(unittest.TestCase):
     def test_data_is_captured_for_all_captors(self):
-        test_str = '200:-15:27'
-        expected_output = [200, -15, 27]
+        test_str = '617:615:612'
+        expected_output = [617, 615, 612]
         formatted_data = formatData(test_str)
         self.assertEqual(expected_output, formatted_data)
 

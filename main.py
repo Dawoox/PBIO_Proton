@@ -18,18 +18,15 @@ def formatData(data):
 class App:
     def __init__(self):
         # ADMIN CONFIG, YOU SHOULDN'T NEED TO EDIT THESES VALUES /!\
-        self.DEFAULT_COM_PORT = 'COM4'
+        self.DEFAULT_COM_PORT = '/dev/ttyACM0'
         self.DEFAULT_DB_PATH = 'pool1.db'
-        self.EMULATE_ARDUINO_DATA = True
+        self.EMULATE_ARDUINO_DATA = False
         self.EMULATE_MAX_DATA_JUMP = 5
         self.DEBUG_last_emulate_data = [0, 0, 0]
-        self.DEBUG_ignore_precheck = True
         # IN-APP VARIABLES
         self.com_port = None
         self.serial_link = None
         self.db_conn = None
-        self.data_validity = True
-        self.zero_point = None
 
         # Config for the file logger
         # WIP: logging.basicConfig(filename='what_the_heck_just_happened.log', encoding='utf-8', level=logging.DEBUG)
@@ -85,15 +82,10 @@ class App:
         self.db_conn.commit()
 
     def precheck(self):
-        # Check if the zero point is already set
-        if self.zero_point is None:
-            self.logger.critical("ZERO POINT NOT SET")
-            exit()
         # Check if the flag "EMULATE_ARDUINO_DATA" is set to True
         if self.EMULATE_ARDUINO_DATA:
-            self.logger.critical("EMULATING ARDUINO DATA")
-            self.logger.critical("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
-            exit()
+            self.logger.warning("EMULATING ARDUINO DATA")
+            self.logger.warning("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
 
     def connectToSerialPort(self):
         # SERIAL LINK SETUP
@@ -121,12 +113,10 @@ class App:
         self.logger.info("Press X to calibrate the system")
         self.logger.info("DOING SO WHILE CAPTURING DATA WILL INVALIDATE ANY FURTHER DATA")
         self.logger.info("==================================================================")
-        if self.DEBUG_ignore_precheck:
-            self.logger.warning("/!\\ PRECHECK DISABLED /!\\")
-        else:
-            self.precheck()
+        self.precheck()
         if not self.EMULATE_ARDUINO_DATA:
             print()
+            self.logger.info("Connecting to serial port...")
             self.connectToSerialPort()
             print()
         # Set exit handler
@@ -141,7 +131,8 @@ class App:
         self.logger.info("Now running...")
         while True:
             data_in = self.readDataIn()
-            self.storeData(data_in)
+            formatted_data = formatData(data_in)
+            self.storeData(formatted_data)
 
 
 if __name__ == '__main__':
