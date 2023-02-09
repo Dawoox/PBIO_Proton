@@ -1,1 +1,1 @@
-SELECT time,sensor1 FROM 'data';
+SELECT time,sensor1,sensor2,sensor3 FROM 'data';
