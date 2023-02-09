@@ -10,7 +10,7 @@ import coloredlogs
 from pyfiglet import Figlet
 
 
-def formatData(data):
+def format_data(data):
     data = data.split(':')
     return list(map(int, data))
 
@@ -45,7 +45,7 @@ class App:
             self.logger.debug("WAITING FOR ARDUINO BOARD TO RESPOND")
             time.sleep(2)
 
-    def readDataIn(self):
+    def read_data_in(self):
         if self.EMULATE_ARDUINO_DATA:
             data = []
             for i in range(3):
@@ -73,7 +73,7 @@ class App:
             self.logger.info('Closing database link')
             self.db_conn.close()
 
-    def storeData(self, data):
+    def store_data(self, data):
         cursor = self.db_conn.cursor()
         self.logger.debug(f"STORING DATA: {data}")
         cursor.execute("INSERT INTO data (time,sensor1,sensor2,sensor3) " +
@@ -87,7 +87,7 @@ class App:
             self.logger.warning("EMULATING ARDUINO DATA")
             self.logger.warning("DO NOT USE THIS MODE FOR PRODUCTION /!\\")
 
-    def connectToSerialPort(self):
+    def connect_to_serial(self):
         # SERIAL LINK SETUP
         self.com_port = str(input("Com port? (DEFAULT IS " + str(self.DEFAULT_COM_PORT) + ")"))
         if self.com_port == '':
@@ -101,7 +101,7 @@ class App:
         self.logger.debug("WAITING FOR ARDUINO BOARD TO RESTART")
 
     def calibrate(self):
-        self.DEBUG_last_emulate_data = self.readDataIn()
+        self.DEBUG_last_emulate_data = self.read_data_in()
         pass
 
     def run(self):
@@ -117,7 +117,7 @@ class App:
         if not self.EMULATE_ARDUINO_DATA:
             print()
             self.logger.info("Connecting to serial port...")
-            self.connectToSerialPort()
+            self.connect_to_serial()
             print()
         # Set exit handler
         atexit.register(self.exit_handler)
@@ -130,9 +130,9 @@ class App:
         self.send_command('run')
         self.logger.info("Now running...")
         while True:
-            data_in = self.readDataIn()
-            formatted_data = formatData(data_in)
-            self.storeData(formatted_data)
+            data_in = self.read_data_in()
+            formatted_data = format_data(data_in)
+            self.store_data(formatted_data)
 
 
 if __name__ == '__main__':
