@@ -132,6 +132,7 @@ class App:
         while True:
             data_in = self.read_data_in()
             formatted_data = format_data(data_in)
+            self.logger.info(formatted_data)
             self.store_data(formatted_data)
 
 
